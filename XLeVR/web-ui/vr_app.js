@@ -1,5 +1,36 @@
 // Wait for A-Frame scene to load
 
+function gamepadButtonPressed(gamepad, indices) {
+    if (!gamepad || !gamepad.buttons) return false;
+    return indices.some((index) => {
+        const button = gamepad.buttons[index];
+        return !!button && (button.pressed || button.value > 0.5);
+    });
+}
+
+function gamepadRawButtons(gamepad) {
+    if (!gamepad || !gamepad.buttons) return [];
+    return Array.from(gamepad.buttons).map((button, index) => ({
+        index,
+        pressed: !!button?.pressed,
+        value: button?.value || 0
+    }));
+}
+
+function attachFaceButtonEvents(handEl, state, bindings) {
+    if (!handEl) return;
+    Object.entries(bindings).forEach(([eventPrefix, stateKey]) => {
+        handEl.addEventListener(`${eventPrefix}buttondown`, () => {
+            state[stateKey] = true;
+            console.log(`${eventPrefix.toUpperCase()} button pressed`);
+        });
+        handEl.addEventListener(`${eventPrefix}buttonup`, () => {
+            state[stateKey] = false;
+            console.log(`${eventPrefix.toUpperCase()} button released`);
+        });
+    });
+}
+
 AFRAME.registerComponent('controller-updater', {
   init: function () {
     console.log("Controller updater component initialized.");
@@ -20,6 +51,8 @@ AFRAME.registerComponent('controller-updater', {
     this.rightGripDown = false;
     this.leftTriggerDown = false;
     this.rightTriggerDown = false;
+    this.leftFaceButtons = { x: false, y: false };
+    this.rightFaceButtons = { a: false, b: false };
 
     // --- Status reporting ---
     this.lastStatusUpdate = 0;
@@ -188,6 +221,19 @@ AFRAME.registerComponent('controller-updater', {
     };
 
     // --- Modify Event Listeners ---
+    attachFaceButtonEvents(this.leftHand, this.leftFaceButtons, {
+        x: 'x',
+        y: 'y',
+        a: 'x',
+        b: 'y'
+    });
+    attachFaceButtonEvents(this.rightHand, this.rightFaceButtons, {
+        a: 'a',
+        b: 'b',
+        x: 'a',
+        y: 'b'
+    });
+
     this.leftHand.addEventListener('triggerdown', (evt) => {
         console.log('Left Trigger Pressed');
         this.leftTriggerDown = true;
@@ -489,13 +535,18 @@ AFRAME.registerComponent('controller-updater', {
                     x: leftGamepad.axes[2] || 0,
                     y: leftGamepad.axes[3] || 0
                 };
+                const lowerFacePressed = this.leftFaceButtons.x;
+                const upperFacePressed = this.leftFaceButtons.y;
                 // 侧边按钮
                 leftController.buttons = {
-                    a: !!leftGamepad.buttons[3]?.pressed,
-                    b: !!leftGamepad.buttons[4]?.pressed,
+                    x: lowerFacePressed,
+                    y: upperFacePressed,
+                    left_lower: lowerFacePressed,
+                    left_raise: upperFacePressed,
                     squeeze: !!leftGamepad.buttons[1]?.pressed,
                     thumbstick: !!leftGamepad.buttons[2]?.pressed,
-                    menu: !!leftGamepad.buttons[6]?.pressed
+                    menu: !!leftGamepad.buttons[6]?.pressed,
+                    raw: gamepadRawButtons(leftGamepad)
                 };
             }
         }
@@ -566,13 +617,18 @@ AFRAME.registerComponent('controller-updater', {
                     x: rightGamepad.axes[2] || 0,
                     y: rightGamepad.axes[3] || 0
                 };
+                const lowerFacePressed = this.rightFaceButtons.a;
+                const upperFacePressed = this.rightFaceButtons.b;
                 // 侧边按钮
                 rightController.buttons = {
-                    a: !!rightGamepad.buttons[3]?.pressed,
-                    b: !!rightGamepad.buttons[4]?.pressed,
+                    a: lowerFacePressed,
+                    b: upperFacePressed,
+                    right_lower: lowerFacePressed,
+                    right_raise: upperFacePressed,
                     squeeze: !!rightGamepad.buttons[1]?.pressed,
                     thumbstick: !!rightGamepad.buttons[2]?.pressed,
-                    menu: !!rightGamepad.buttons[6]?.pressed
+                    menu: !!rightGamepad.buttons[6]?.pressed,
+                    raw: gamepadRawButtons(rightGamepad)
                 };
             }
         }
@@ -745,4 +801,4 @@ function addControllerTrackingButton() {
     } else {
         console.warn('WebXR not supported by this browser.');
     }
-} 
+}

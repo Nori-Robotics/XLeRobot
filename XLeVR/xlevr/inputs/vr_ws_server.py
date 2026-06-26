@@ -255,6 +255,7 @@ class VRWebSocketServer(BaseInputProvider):
         grip_active = data.get('gripActive', False)
         trigger = data.get('trigger', 0)
         thumbstick = data.get('thumbstick', {})
+        buttons = data.get('buttons', {})
         
         controller = self.left_controller if hand == 'left' else self.right_controller
         
@@ -272,7 +273,8 @@ class VRWebSocketServer(BaseInputProvider):
                     "source": "vr_trigger",
                     "trigger": trigger,
                     "trigger_active": trigger_active,
-                    "thumbstick": thumbstick
+                    "thumbstick": thumbstick,
+                    "buttons": buttons
                 }
             )
             await self.send_goal(gripper_goal)
@@ -306,7 +308,8 @@ class VRWebSocketServer(BaseInputProvider):
                         "reset_target_to_current": True,
                         "trigger": trigger,
                         "trigger_active": trigger_active,
-                        "thumbstick": thumbstick
+                        "thumbstick": thumbstick,
+                        "buttons": buttons
                     }
                 )
                 await self.send_goal(reset_goal)
@@ -343,7 +346,8 @@ class VRWebSocketServer(BaseInputProvider):
                     "scaled_position": absolute_position.tolist(),
                     "trigger": trigger,
                     "trigger_active": trigger_active,
-                    "thumbstick": thumbstick
+                    "thumbstick": thumbstick,
+                    "buttons": buttons
                 }
             )
             await self.send_goal(goal)
@@ -586,4 +590,4 @@ class VRWebSocketServer(BaseInputProvider):
             print()
         else:
             # Use the parent class method to send to queue
-            await super().send_goal(goal) 
+            await super().send_goal(goal)
